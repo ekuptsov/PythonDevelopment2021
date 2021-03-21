@@ -30,7 +30,12 @@ class MysticSquare(tk.Frame):
 
     def player_win(self):
         win_order = itertools.product(range(self.rows), range(self.cols))
-        decision = all(curr == win for curr, win in zip(self.order, win_order))
+        # compare positions only for len(frame) buttons
+        decision = all(
+            curr == win
+            for _, curr, win
+            in zip(range(len(self.frame)), self.order, win_order)
+        )
         return decision
 
     def in_bounds(self, i, j):
