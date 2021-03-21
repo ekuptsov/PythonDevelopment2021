@@ -27,9 +27,6 @@ class Application(tk.Frame):
         self.grid(sticky='NSWE')
         self.createWidgets()
 
-    def createWidgets(self):
-        pass
-
     def apply_geometry(self, row, column, rowweight=1, height=0,
                        colweight=1, width=0, gravity='NSWE'):
         row = int(row)
