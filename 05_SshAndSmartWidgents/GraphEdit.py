@@ -53,6 +53,8 @@ class Editor(tk.Frame):
         rf"(?P<fill>{'|'.join(available_colors)})"
     )
 
+    tag = 'mistakes'
+
     def __init__(self, master=None, title=None):
         super().__init__(master)
         if master:
@@ -71,7 +73,17 @@ class Editor(tk.Frame):
             x0, y0, x1, y1, fill=fill, width=width, outline=outline)
 
     def _mark(self, line):
-        pass
+        line = line+'\n'  # '\n' awkward :(
+        # .tag_add(tag, indicies)
+        print(f'mark {line}')
+        i = self.text.search(line, '1.0')
+        self.text.tag_add(self.tag, i, i+' lineend')
+
+    def _unmark(self, line):
+        line = line+'\n'  # '\n' awkward :(
+        print(f'unmark {line}')
+        i = self.text.search(line, '1.0')
+        self.text.tag_remove(self.tag, i, i+' lineend')
 
     def _modified(self, event):
         # print('mody')
@@ -81,31 +93,36 @@ class Editor(tk.Frame):
             for Id in
             self.canvas.find_all()
         )
+        print(figure_descriptions)
+        print(text)
         if figure_descriptions < text:
-            # add new lines
-            new = next(iter(text - figure_descriptions))
-            m = re.fullmatch(self.DESCR_RE, new)
-            if m:
-                # print('newfig')
-                self._draw(**m.groupdict())
-            else:
-                # print('mark in red')
-                self._mark(new)
+            # new lines
+            for new in text - figure_descriptions:
+                m = re.fullmatch(self.DESCR_RE, new)
+                if m:
+                    # print('newfig')
+                    self._unmark(new)
+                    self._draw(**m.groupdict())
+                else:
+                    # print('mark in red')
+                    self._mark(new)
         elif figure_descriptions - text:
             # edit existed lines
             # print('edit')
-            removed = figure_descriptions - text
-            added = text - figure_descriptions
+            removed = (figure_descriptions - text).pop()
+            added = (text - figure_descriptions).pop()
             # print(f'removed={removed}')
             # print(f'added={added}')
-            m = re.fullmatch(self.DESCR_RE, removed.pop())
+            m = re.fullmatch(self.DESCR_RE, removed)
             if m:
                 x0, y0, x1, y1 = eval(m.group('coords'))
                 w = float(m.group('width')) / 2
                 Ids = self.canvas.find_enclosed(x0-w, y0-w, x1+w, y1+w)
                 Id = next(iter(Ids), None)
                 self.canvas.delete(Id)
-            m = re.fullmatch(self.DESCR_RE, added.pop())
+            m = re.fullmatch(self.DESCR_RE, added)
+            # unmark added text
+            self._unmark(added)
             if m:
                 self._draw(**m.groupdict())
         self.text.edit_modified(0)
@@ -117,7 +134,8 @@ class Editor(tk.Frame):
     def createText(self):
         self.text = tk.Text(self, height=20, width=50, font=('Helvetica', '14'))
         self.text.grid(row=0, column=0)
-        self.figures_set = set()
+        self.text.tag_config(self.tag, background='red')
+        # self.figures_set = set()
         self.text.bind('<Button-1>', self._user_edit)
 
     def _description(self, Id, options=None):
